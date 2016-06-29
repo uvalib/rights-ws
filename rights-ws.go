@@ -19,14 +19,14 @@ var logger *log.Logger
 const version = "1.0"
 
 func main() {
-	lf, _ := os.OpenFile("service.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
-	defer lf.Close()
-	logger = log.New(lf, "service: ", log.LstdFlags)
+	// lf, _ := os.OpenFile("service.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
+	// defer lf.Close()
+	// logger = log.New(lf, "service: ", log.LstdFlags)
 	// use below to log to console....
-	// logger = log.New(os.Stdout, "logger: ", log.LstdFlags)
+	logger = log.New(os.Stdout, "logger: ", log.LstdFlags)
 
 	// Load cfg
-	logger.Printf("===> iiif-metadata-ws staring up <===")
+	logger.Printf("===> rights-ws staring up <===")
 	logger.Printf("Load configuration...")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
@@ -51,7 +51,7 @@ func main() {
 	// Set routes and start server
 	mux := httprouter.New()
 	mux.GET("/", rootHandler)
-	mux.GET("/rights/:pid", rightsHandler)
+	mux.GET("/:pid", rightsHandler)
 	logger.Printf("Start service on port %s", viper.GetString("port"))
 	http.ListenAndServe(":"+viper.GetString("port"), mux)
 }
@@ -61,7 +61,7 @@ func main() {
  */
 func rootHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	logger.Printf("%s %s", req.Method, req.RequestURI)
-	fmt.Fprintf(rw, "Access rights service version %s. Usage: ./rights/[pid]", version)
+	fmt.Fprintf(rw, "Access rights service version %s", version)
 }
 
 /**
