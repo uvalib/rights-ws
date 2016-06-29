@@ -1,0 +1,6 @@
+port: 8082
+db_user: USER
+db_pass: PASS
+db_name: tracksys3_development
+db_host: localhost:3306
+db_old_passwords: false
