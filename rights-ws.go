@@ -109,7 +109,7 @@ func getBiblRights(pid string, rw http.ResponseWriter) {
 	if policy.Valid {
 		fmt.Fprintf(rw, "%s", strings.ToLower(strings.Split(policy.String, " ")[0]))
 	} else {
-		fmt.Fprint(rw, "internal")
+		fmt.Fprint(rw, "private")
 	}
 }
 
@@ -125,6 +125,6 @@ func getMasterFileRights(pid string, rw http.ResponseWriter) {
 	if policy.Valid {
 		fmt.Fprintf(rw, "%s", strings.ToLower(strings.Split(policy.String, " ")[0]))
 	} else {
-		fmt.Fprint(rw, "internal")
+		fmt.Fprint(rw, "private")
 	}
 }
