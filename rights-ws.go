@@ -19,11 +19,11 @@ var logger *log.Logger
 const version = "1.0"
 
 func main() {
-	// lf, _ := os.OpenFile("service.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
-	// defer lf.Close()
-	// logger = log.New(lf, "service: ", log.LstdFlags)
+	lf, _ := os.OpenFile("service.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
+	defer lf.Close()
+	logger = log.New(lf, "service: ", log.LstdFlags)
 	// use below to log to console....
-	logger = log.New(os.Stdout, "logger: ", log.LstdFlags)
+	//logger = log.New(os.Stdout, "logger: ", log.LstdFlags)
 
 	// Load cfg
 	logger.Printf("===> rights-ws staring up <===")
