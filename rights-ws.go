@@ -16,7 +16,7 @@ import (
 var db *sql.DB
 var logger *log.Logger
 
-const version = "1.0"
+const version = "1.1.0"
 
 func main() {
 	lf, _ := os.OpenFile("service.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
@@ -71,8 +71,8 @@ func rightsHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	logger.Printf("%s %s", req.Method, req.RequestURI)
 	pid := params.ByName("pid")
 	pidType := determinePidType(pid)
-	if pidType == "bibl" {
-		getBiblRights(pid, rw)
+	if pidType == "metadata" {
+		getMetadataRights(pid, rw)
 	} else if pidType == "master_file" {
 		getMasterFileRights(pid, rw)
 	} else {
@@ -85,10 +85,10 @@ func rightsHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 func determinePidType(pid string) (pidType string) {
 	var cnt int
 	pidType = "invalid"
-	qs := "select count(*) as cnt from bibls b where pid=?"
+	qs := "select count(*) as cnt from metadata b where pid=?"
 	db.QueryRow(qs, pid).Scan(&cnt)
 	if cnt == 1 {
-		pidType = "bibl"
+		pidType = "metadata"
 		return
 	}
 
@@ -102,9 +102,9 @@ func determinePidType(pid string) (pidType string) {
 	return
 }
 
-func getBiblRights(pid string, rw http.ResponseWriter) {
+func getMetadataRights(pid string, rw http.ResponseWriter) {
 	var policy sql.NullString
-	qs := "select a.name from bibls b inner join availability_policies a on a.id=b.availability_policy_id where b.pid=?"
+	qs := "select a.name from metadata b inner join availability_policies a on a.id=b.availability_policy_id where b.pid=?"
 	db.QueryRow(qs, pid).Scan(&policy)
 	if policy.Valid {
 		fmt.Fprintf(rw, "%s", strings.ToLower(strings.Split(policy.String, " ")[0]))
@@ -118,7 +118,7 @@ func getMasterFileRights(pid string, rw http.ResponseWriter) {
 	qs :=
 		`select a.name from master_files m
          inner join units u on u.id = m.unit_id
-         inner join bibls b on b.id = u.bibl_id
+         inner join metadata b on b.id = u.metadata_id
          inner join availability_policies a on a.id = b.availability_policy_id
       where m.pid=?`
 	db.QueryRow(qs, pid).Scan(&policy)
