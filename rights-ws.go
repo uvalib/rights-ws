@@ -16,7 +16,7 @@ import (
 var db *sql.DB
 var logger *log.Logger
 
-const version = "1.1.0"
+const version = "1.3.0"
 
 func main() {
 	lf, _ := os.OpenFile("service.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
