@@ -16,7 +16,7 @@ import (
 var db *sql.DB
 var logger *log.Logger
 
-const version = "1.3.0"
+const version = "1.4.0"
 
 func main() {
 	lf, _ := os.OpenFile("service.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
@@ -117,8 +117,7 @@ func getMasterFileRights(pid string, rw http.ResponseWriter) {
 	var policy sql.NullString
 	qs :=
 		`select a.name from master_files m
-         inner join units u on u.id = m.unit_id
-         inner join metadata b on b.id = u.metadata_id
+         inner join metadata b on b.id = m.metadata_id
          inner join availability_policies a on a.id = b.availability_policy_id
       where m.pid=?`
 	db.QueryRow(qs, pid).Scan(&policy)
