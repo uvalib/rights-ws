@@ -19,28 +19,43 @@ var logger *log.Logger
 const version = "1.4.0"
 
 func main() {
-	lf, _ := os.OpenFile("service.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
-	defer lf.Close()
-	logger = log.New(lf, "service: ", log.LstdFlags)
-	// use below to log to console....
-	//logger = log.New(os.Stdout, "logger: ", log.LstdFlags)
+	logger = log.New(os.Stdout, "", log.LstdFlags)
 
 	// Load cfg
 	logger.Printf("===> rights-ws staring up <===")
 	logger.Printf("Load configuration...")
-	viper.SetConfigName("config")
-	viper.SetConfigType("yml")
-	viper.AddConfigPath(".")
-	err := viper.ReadInConfig()
-	if err != nil {
-		fmt.Printf("Unable to read config: %s", err.Error())
-		os.Exit(1)
-	}
+	viper.BindEnv("PORT")
+	viper.BindEnv("DBHOST")
+	viper.BindEnv("DBPORT")
+	viper.BindEnv("DBNAME")
+	viper.BindEnv("DBUSER")
+	viper.BindEnv("DBPASS")
+	viper.BindEnv("DB_OLD_PASSWDS")
+
+	logger.Printf("PORT           [%s]", viper.GetString("PORT"))
+	logger.Printf("DBHOST         [%s]", viper.GetString("DBHOST"))
+	logger.Printf("DBPORT         [%s]", viper.GetString("DBPORT"))
+	logger.Printf("DBNAME         [%s]", viper.GetString("DBNAME"))
+	logger.Printf("DBUSER         [%s]", viper.GetString("DBUSER"))
+	logger.Printf("DBPASS         [%s]", strings.Repeat("*", len(viper.GetString("DBPASS"))))
+	logger.Printf("DB_OLD_PASSWDS [%s]", viper.GetString("DB_OLD_PASSWDS"))
+
+	//err := viper.ReadInConfig()
+	//if err != nil {
+	//	fmt.Printf("Unable to read config: %s", err.Error())
+	//	os.Exit(1)
+	//}
 
 	// Init DB connection
 	logger.Printf("Init DB connection...")
-	connectStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?allowOldPasswords=%s", viper.GetString("db_user"), viper.GetString("db_pass"),
-		viper.GetString("db_host"), viper.GetString("db_name"), viper.GetString("db_old_passwords"))
+	connectStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?allowOldPasswords=%s",
+		viper.GetString("DBUSER"),
+		viper.GetString("DBPASS"),
+		viper.GetString("DBHOST"),
+		viper.GetString("DBPORT"),
+		viper.GetString("DBNAME"),
+		viper.GetString("DB_OLD_PASSWDS"))
+	var err error
 	db, err = sql.Open("mysql", connectStr)
 	if err != nil {
 		fmt.Printf("Database connection failed: %s", err.Error())
@@ -48,12 +63,17 @@ func main() {
 	}
 	defer db.Close()
 
+	if err = db.Ping(); err != nil {
+		fmt.Printf("Database ping failed: %s", err.Error())
+		os.Exit(1)
+	}
+
 	// Set routes and start server
 	mux := httprouter.New()
 	mux.GET("/", rootHandler)
 	mux.GET("/:pid", rightsHandler)
-	logger.Printf("Start service on port %s", viper.GetString("port"))
-	http.ListenAndServe(":"+viper.GetString("port"), mux)
+	logger.Printf("Start service on port %s", viper.GetString("PORT"))
+	http.ListenAndServe(":"+viper.GetString("PORT"), mux)
 }
 
 /**

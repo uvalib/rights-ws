@@ -1,10 +1,7 @@
-.DS_Store
-log/*.*
-*.log
-tmp/*
-*~
-*.bak
+env.*
+tmp
 bin
 dist
-# Ignore application configuration
-/config.yml
+.idea
+package/scripts/build.ksh
+package/scripts/shell.ksh
