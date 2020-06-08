@@ -76,7 +76,7 @@ func main() {
  * Handle a request for / or /version
  */
 func rootHandler(rw http.ResponseWriter, req *http.Request) {
-	logger.Printf("%s %s", req.Method, req.RequestURI)
+	logger.Printf("%s %s (%s)", req.Method, req.RequestURI, req.RemoteAddr)
 	fmt.Fprintf(rw, "Access rights service version %s", version)
 }
 
@@ -84,7 +84,7 @@ func rootHandler(rw http.ResponseWriter, req *http.Request) {
  * Handle a request for /healthcheck
  */
 func healthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	logger.Printf("%s %s", req.Method, req.RequestURI)
+	logger.Printf("%s %s (%s)", req.Method, req.RequestURI, req.RemoteAddr)
 
 	if err := db.Ping(); err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -99,7 +99,7 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request) {
  * Get rights statement for a PID
  */
 func rightsHandler(rw http.ResponseWriter, req *http.Request) {
-	logger.Printf("%s %s", req.Method, req.RequestURI)
+	logger.Printf("%s %s (%s)", req.Method, req.RequestURI, req.RemoteAddr)
 	vars := mux.Vars(req)
 	pid := vars["pid"]
 	pidType := determinePidType(pid)
