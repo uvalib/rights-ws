@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
 )
 
@@ -40,12 +40,6 @@ func main() {
 	logger.Printf("DBPASS         [%s]", strings.Repeat("*", len(viper.GetString("DBPASS"))))
 	logger.Printf("DB_OLD_PASSWDS [%s]", viper.GetString("DB_OLD_PASSWDS"))
 
-	//err := viper.ReadInConfig()
-	//if err != nil {
-	//	fmt.Printf("Unable to read config: %s", err.Error())
-	//	os.Exit(1)
-	//}
-
 	// Init DB connection
 	logger.Printf("Init DB connection...")
 	connectStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?allowOldPasswords=%s",
@@ -69,34 +63,52 @@ func main() {
 	}
 
 	// Set routes and start server
-	mux := httprouter.New()
-	mux.GET("/", rootHandler)
-	mux.GET("/:pid", rightsHandler)
+	r := mux.NewRouter()
+	r.HandleFunc("/", rootHandler)
+	r.HandleFunc("/version", rootHandler)
+	r.HandleFunc("/healthcheck", healthCheckHandler)
+	r.HandleFunc("/{pid:.*}", rightsHandler)
 	logger.Printf("Start service on port %s", viper.GetString("PORT"))
-	http.ListenAndServe(":"+viper.GetString("PORT"), mux)
+	http.ListenAndServe(":"+viper.GetString("PORT"), r)
 }
 
 /**
- * Handle a request for /
+ * Handle a request for / or /version
  */
-func rootHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+func rootHandler(rw http.ResponseWriter, req *http.Request) {
 	logger.Printf("%s %s", req.Method, req.RequestURI)
 	fmt.Fprintf(rw, "Access rights service version %s", version)
 }
 
 /**
+ * Handle a request for /healthcheck
+ */
+func healthCheckHandler(rw http.ResponseWriter, req *http.Request) {
+	logger.Printf("%s %s", req.Method, req.RequestURI)
+
+	if err := db.Ping(); err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(rw, "{\"database\":{\"healthy\":false,\"mesage\":\"%s\"}}", err.Error())
+		return
+	}
+	rw.WriteHeader(http.StatusOK)
+	fmt.Fprintf(rw, "{\"database\":{\"healthy\":true}}")
+}
+
+/**
  * Get rights statement for a PID
  */
-func rightsHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+func rightsHandler(rw http.ResponseWriter, req *http.Request) {
 	logger.Printf("%s %s", req.Method, req.RequestURI)
-	pid := params.ByName("pid")
+	vars := mux.Vars(req)
+	pid := vars["pid"]
 	pidType := determinePidType(pid)
 	if pidType == "metadata" {
 		getMetadataRights(pid, rw)
 	} else if pidType == "master_file" {
 		getMasterFileRights(pid, rw)
 	} else {
-		logger.Printf("Couldn't find %s", pid)
+		logger.Printf("Cant find: %s", pid)
 		rw.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rw, "PID %s not found", pid)
 	}
@@ -127,8 +139,10 @@ func getMetadataRights(pid string, rw http.ResponseWriter) {
 	qs := "select a.name from metadata b inner join availability_policies a on a.id=b.availability_policy_id where b.pid=?"
 	db.QueryRow(qs, pid).Scan(&policy)
 	if policy.Valid {
+		rw.WriteHeader(http.StatusOK)
 		fmt.Fprintf(rw, "%s", strings.ToLower(strings.Split(policy.String, " ")[0]))
 	} else {
+		rw.WriteHeader(http.StatusOK)
 		fmt.Fprint(rw, "private")
 	}
 }
@@ -142,8 +156,10 @@ func getMasterFileRights(pid string, rw http.ResponseWriter) {
       where m.pid=?`
 	db.QueryRow(qs, pid).Scan(&policy)
 	if policy.Valid {
+		rw.WriteHeader(http.StatusOK)
 		fmt.Fprintf(rw, "%s", strings.ToLower(strings.Split(policy.String, " ")[0]))
 	} else {
+		rw.WriteHeader(http.StatusOK)
 		fmt.Fprint(rw, "private")
 	}
 }
