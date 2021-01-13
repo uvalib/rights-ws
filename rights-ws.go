@@ -92,6 +92,7 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request) {
 	logger.Printf("%s %s (%s)", req.Method, req.RequestURI, req.RemoteAddr)
 
 	if err := db.Ping(); err != nil {
+		logger.Printf("ERROR: pinging database (%s)", err.Error())
 		rw.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(rw, "{\"database\":{\"healthy\":false,\"mesage\":\"%s\"}}", err.Error())
 		return
@@ -105,6 +106,7 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request) {
  */
 func rightsHandler(rw http.ResponseWriter, req *http.Request) {
 	logger.Printf("%s %s (%s)", req.Method, req.RequestURI, req.RemoteAddr)
+	
 	vars := mux.Vars(req)
 	pid := vars["pid"]
 	pidType, err := determinePidType(pid)
@@ -158,6 +160,7 @@ func getMetadataRights(pid string, rw http.ResponseWriter) {
 	qs := "select a.name from metadata b inner join availability_policies a on a.id=b.availability_policy_id where b.pid=?"
 	err := db.QueryRow(qs, pid).Scan(&policy)
 	if err != nil {
+		logger.Printf("ERROR: getting metadata rights for %s (%s)", pid, err.Error())
 		rw.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(rw, "Error getting metadata rights for %s (%s)", pid, err.Error())
 		return
@@ -181,8 +184,9 @@ func getMasterFileRights(pid string, rw http.ResponseWriter) {
       where m.pid=?`
 	err := db.QueryRow(qs, pid).Scan(&policy)
 	if err != nil {
+		logger.Printf("ERROR: getting master file rights for %s (%s)", pid, err.Error())
 		rw.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(rw, "Error getting masgter file rights for %s (%s)", pid, err.Error())
+		fmt.Fprintf(rw, "Error getting master file rights for %s (%s)", pid, err.Error())
 		return
 	}
 
