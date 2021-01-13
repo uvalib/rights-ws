@@ -31,6 +31,7 @@ func main() {
 	viper.BindEnv("DBUSER")
 	viper.BindEnv("DBPASS")
 	viper.BindEnv("DB_OLD_PASSWDS")
+	viper.BindEnv("DBTIMEOUT")
 
 	logger.Printf("PORT           [%s]", viper.GetString("PORT"))
 	logger.Printf("DBHOST         [%s]", viper.GetString("DBHOST"))
@@ -39,16 +40,20 @@ func main() {
 	logger.Printf("DBUSER         [%s]", viper.GetString("DBUSER"))
 	logger.Printf("DBPASS         [%s]", strings.Repeat("*", len(viper.GetString("DBPASS"))))
 	logger.Printf("DB_OLD_PASSWDS [%s]", viper.GetString("DB_OLD_PASSWDS"))
+	logger.Printf("DBTIMEOUT      [%s]", viper.GetString("DBTIMEOUT"))
 
 	// Init DB connection
 	logger.Printf("Init DB connection...")
-	connectStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?allowOldPasswords=%s",
+	connectStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?allowOldPasswords=%s&timeout=%ss&readTimeout=%ss&writeTimeout=%ss",
 		viper.GetString("DBUSER"),
 		viper.GetString("DBPASS"),
 		viper.GetString("DBHOST"),
 		viper.GetString("DBPORT"),
 		viper.GetString("DBNAME"),
-		viper.GetString("DB_OLD_PASSWDS"))
+		viper.GetString("DB_OLD_PASSWDS"),
+    	viper.GetString("DBTIMEOUT"),
+		viper.GetString("DBTIMEOUT"),
+		viper.GetString("DBTIMEOUT") )
 	var err error
 	db, err = sql.Open("mysql", connectStr)
 	if err != nil {
