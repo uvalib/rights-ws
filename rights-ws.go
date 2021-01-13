@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -16,7 +17,7 @@ import (
 var db *sql.DB
 var logger *log.Logger
 
-const version = "1.4.1"
+const version = "1.5.0"
 
 func main() {
 	logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -70,7 +71,7 @@ func main() {
 	// Set routes and start server
 	r := mux.NewRouter()
 	r.HandleFunc("/", rootHandler)
-	r.HandleFunc("/version", rootHandler)
+	r.HandleFunc("/version", versionHandler)
 	r.HandleFunc("/healthcheck", healthCheckHandler)
 	r.HandleFunc("/{pid:.*}", rightsHandler)
 	logger.Printf("Start service on port %s", viper.GetString("PORT"))
@@ -78,11 +79,29 @@ func main() {
 }
 
 /**
- * Handle a request for / or /version
+ * Handle a request for /
  */
 func rootHandler(rw http.ResponseWriter, req *http.Request) {
 	logger.Printf("%s %s (%s)", req.Method, req.RequestURI, req.RemoteAddr)
 	fmt.Fprintf(rw, "Access rights service version %s", version)
+}
+
+/**
+ * Handle a request for /version
+ */
+func versionHandler(rw http.ResponseWriter, req *http.Request) {
+	logger.Printf("%s %s (%s)", req.Method, req.RequestURI, req.RemoteAddr)
+
+	build := "unknown"
+
+	// cos our CWD is the bin directory
+	files, _ := filepath.Glob("buildtag.*")
+	if len(files) == 1 {
+		build = strings.Replace(files[0], "buildtag.", "", 1)
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	fmt.Fprintf(rw, "{\"build\":\"%s\",\"version\":\"%s\"}", build, version)
 }
 
 /**
@@ -106,7 +125,7 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request) {
  */
 func rightsHandler(rw http.ResponseWriter, req *http.Request) {
 	logger.Printf("%s %s (%s)", req.Method, req.RequestURI, req.RemoteAddr)
-	
+
 	vars := mux.Vars(req)
 	pid := vars["pid"]
 	pidType, err := determinePidType(pid)
