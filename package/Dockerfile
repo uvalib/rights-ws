@@ -44,8 +44,8 @@ COPY --from=builder /build/bin/rights-ws.linux $APP_HOME/bin/rights-ws
 RUN chown webservice:webservice /home/webservice/.profile $APP_HOME/scripts/entry.sh $APP_HOME/bin/rights-ws && chmod 755 /home/webservice/.profile $APP_HOME/scripts/entry.sh $APP_HOME/bin/rights-ws
 
 # Add the build tag
-#ARG BUILD_TAG
-#RUN test -n "$BUILD_TAG" && touch $APP_HOME/buildtag.build-$BUILD_TAG || touch $APP_HOME/buildtag.build-0
+ARG BUILD_TAG
+RUN test -n "$BUILD_TAG" && touch $APP_HOME/buildtag.build-$BUILD_TAG || touch $APP_HOME/buildtag.build-0
 
 # Specify the user
 USER webservice
