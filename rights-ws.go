@@ -16,7 +16,7 @@ import (
 var db *sql.DB
 var logger *log.Logger
 
-const version = "1.4.0"
+const version = "1.4.1"
 
 func main() {
 	logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -102,42 +102,62 @@ func rightsHandler(rw http.ResponseWriter, req *http.Request) {
 	logger.Printf("%s %s (%s)", req.Method, req.RequestURI, req.RemoteAddr)
 	vars := mux.Vars(req)
 	pid := vars["pid"]
-	pidType := determinePidType(pid)
+	pidType, err := determinePidType(pid)
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(rw, "Error getting PID type for %s (%s)", pid, err.Error())
+		return
+	}
+
 	if pidType == "metadata" {
 		getMetadataRights(pid, rw)
-	} else if pidType == "master_file" {
-		getMasterFileRights(pid, rw)
-	} else {
-		logger.Printf("Cant find: %s", pid)
-		rw.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(rw, "PID %s not found", pid)
+		return
 	}
+	if pidType == "master_file" {
+		getMasterFileRights(pid, rw)
+		return
+	}
+
+	logger.Printf("WARNING: cant find: %s", pid)
+	rw.WriteHeader(http.StatusNotFound)
+	fmt.Fprintf(rw, "PID %s not found", pid)
 }
 
-func determinePidType(pid string) (pidType string) {
+func determinePidType(pid string) (string, error) {
 	var cnt int
-	pidType = "invalid"
 	qs := "select count(*) as cnt from metadata b where pid=?"
-	db.QueryRow(qs, pid).Scan(&cnt)
+	err := db.QueryRow(qs, pid).Scan(&cnt)
+	if err != nil {
+		logger.Printf("ERROR: determining PID type for %s (%s)", pid, err.Error())
+		return "", err
+	}
 	if cnt == 1 {
-		pidType = "metadata"
-		return
+		return "metadata", nil
 	}
 
 	qs = "select count(*) as cnt from master_files b where pid=?"
-	db.QueryRow(qs, pid).Scan(&cnt)
+	err = db.QueryRow(qs, pid).Scan(&cnt)
+	if err != nil {
+		logger.Printf("ERROR: determining PID type for %s (%s)", pid, err.Error())
+		return "", err
+	}
 	if cnt == 1 {
-		pidType = "master_file"
-		return
+		return "master_file", nil
 	}
 
-	return
+	return "invalid", nil
 }
 
 func getMetadataRights(pid string, rw http.ResponseWriter) {
 	var policy sql.NullString
 	qs := "select a.name from metadata b inner join availability_policies a on a.id=b.availability_policy_id where b.pid=?"
-	db.QueryRow(qs, pid).Scan(&policy)
+	err := db.QueryRow(qs, pid).Scan(&policy)
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(rw, "Error getting metadata rights for %s (%s)", pid, err.Error())
+		return
+	}
+
 	if policy.Valid {
 		rw.WriteHeader(http.StatusOK)
 		fmt.Fprintf(rw, "%s", strings.ToLower(strings.Split(policy.String, " ")[0]))
@@ -154,7 +174,13 @@ func getMasterFileRights(pid string, rw http.ResponseWriter) {
          inner join metadata b on b.id = m.metadata_id
          inner join availability_policies a on a.id = b.availability_policy_id
       where m.pid=?`
-	db.QueryRow(qs, pid).Scan(&policy)
+	err := db.QueryRow(qs, pid).Scan(&policy)
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(rw, "Error getting masgter file rights for %s (%s)", pid, err.Error())
+		return
+	}
+
 	if policy.Valid {
 		rw.WriteHeader(http.StatusOK)
 		fmt.Fprintf(rw, "%s", strings.ToLower(strings.Split(policy.String, " ")[0]))
