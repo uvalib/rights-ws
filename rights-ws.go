@@ -52,9 +52,9 @@ func main() {
 		viper.GetString("DBPORT"),
 		viper.GetString("DBNAME"),
 		viper.GetString("DB_OLD_PASSWDS"),
-    	viper.GetString("DBTIMEOUT"),
 		viper.GetString("DBTIMEOUT"),
-		viper.GetString("DBTIMEOUT") )
+		viper.GetString("DBTIMEOUT"),
+		viper.GetString("DBTIMEOUT"))
 	var err error
 	db, err = sql.Open("mysql", connectStr)
 	if err != nil {
@@ -179,9 +179,15 @@ func getMetadataRights(pid string, rw http.ResponseWriter) {
 	qs := "select a.name from metadata b inner join availability_policies a on a.id=b.availability_policy_id where b.pid=?"
 	err := db.QueryRow(qs, pid).Scan(&policy)
 	if err != nil {
-		logger.Printf("ERROR: getting metadata rights for %s (%s)", pid, err.Error())
-		rw.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(rw, "Error getting metadata rights for %s (%s)", pid, err.Error())
+		if err == sql.ErrNoRows {
+			logger.Printf("WARNING: no metadata rights for %s", pid)
+			rw.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(rw, "No metadata rights for %s", pid)
+		} else {
+			logger.Printf("ERROR: getting metadata rights for %s (%s)", pid, err.Error())
+			rw.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(rw, "Error getting metadata rights for %s (%s)", pid, err.Error())
+		}
 		return
 	}
 
@@ -203,9 +209,15 @@ func getMasterFileRights(pid string, rw http.ResponseWriter) {
       where m.pid=?`
 	err := db.QueryRow(qs, pid).Scan(&policy)
 	if err != nil {
-		logger.Printf("ERROR: getting master file rights for %s (%s)", pid, err.Error())
-		rw.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(rw, "Error getting master file rights for %s (%s)", pid, err.Error())
+		if err == sql.ErrNoRows {
+			logger.Printf("WARNING: no master file rights for %s", pid)
+			rw.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(rw, "No master file rights for %s", pid)
+		} else {
+			logger.Printf("ERROR: getting master file rights for %s (%s)", pid, err.Error())
+			rw.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(rw, "Error getting master file rights for %s (%s)", pid, err.Error())
+		}
 		return
 	}
 
