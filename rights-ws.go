@@ -17,7 +17,7 @@ import (
 var db *sql.DB
 var logger *log.Logger
 
-const version = "1.5.0"
+const version = "1.5.1"
 
 func main() {
 	logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -193,7 +193,8 @@ func getMetadataRights(pid string, rw http.ResponseWriter) {
 
 	if policy.Valid {
 		rw.WriteHeader(http.StatusOK)
-		fmt.Fprintf(rw, "%s", strings.ToLower(strings.Split(policy.String, " ")[0]))
+		//fmt.Fprintf(rw, "%s", strings.ToLower(strings.Split(policy.String, " ")[0]))
+		fmt.Fprint(rw, "public") // HACK... temporarily remove uva access. call it all public
 	} else {
 		rw.WriteHeader(http.StatusOK)
 		fmt.Fprint(rw, "private")
