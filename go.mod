@@ -3,9 +3,11 @@ module github.com/uvalib/rights-ws
 go 1.14
 
 require (
-	github.com/go-sql-driver/mysql v1.6.0
+	github.com/go-sql-driver/mysql v1.7.0
 	github.com/gorilla/mux v1.8.0
-	github.com/spf13/afero v1.9.2 // indirect
-	github.com/spf13/viper v1.13.0
-	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
+	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
+	github.com/spf13/afero v1.9.3 // indirect
+	github.com/spf13/viper v1.14.0
+	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
 )
